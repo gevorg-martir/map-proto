@@ -1,9 +1,10 @@
 {
   "name": "map-proto",
   "version": "0.0.0",
+  "homepage": "https://gevorg-martir.github.io/map-proto",
   "scripts": {
     "dev": "vite",
-    "docs": "vite build --outDir docs --assetsDir ./",
+    "docs": "vite build --outDir docs --assetsDir ./ --base ./",
     "build": "vite build",
     "serve": "vite preview"
   },
