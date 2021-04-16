@@ -27,7 +27,7 @@ export const render = (container) => {
       ` : ''}
       <h3>Text</h3>
       <p>${feature.text}</p>
-      ${feature.context.map((field) => `
+      ${feature.context?.map((field) => `
         <h3>${field.id.split('.')[0]}</h3>
         <p>${field.text}</p>
       `).toString().replaceAll(',', '')}
