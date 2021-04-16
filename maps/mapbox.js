@@ -6,23 +6,33 @@ const INITIAL_LOCATION = [-73.96879951090524, 40.77796727433872]
 export const render = (container) => {
   container.innerHTML = `
     <div id="map"></div>
-    <div class="info"><div>
+    <div class="bar">
+      <div class="info"></div>
+      <button class="search">Search</button>
+    </div>
   `
-
-  mapboxgl.accessToken = ACCESS_TOKEN
-
-  const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v11',
-    center: INITIAL_LOCATION,
-    zoom: 13
-  })
 
   const addMarker = (lng, lat, color = '#FFFFFF') => {
     return new mapboxgl.Marker({
       color,
       draggable: true
     }).setLngLat([lng, lat]).addTo(map)
+  }
+
+  const setToUI = (feature) => {
+    document.querySelector('.info').innerHTML = `
+      ${(feature?.address || feature.properties?.address) ? `
+        <h3>Address</h3>
+        <p>${feature?.address || feature.properties?.address}</p>
+      ` : ''}
+      <h3>Text</h3>
+      <p>${feature.text}</p>
+      ${feature.context.map((field) => `
+        <h3>${field.id.split('.')[0]}</h3>
+        <p>${field.text}</p>
+      `).toString().replaceAll(',', '')}
+      <textarea>${feature.place_name}</textarea>
+    `
   }
 
   const getAddress = async (lng, lat) => {
@@ -32,18 +42,25 @@ export const render = (container) => {
   const setAddress = async (lng, lat) => {
     const addressData = await getAddress(lng, lat)
     const { features } = addressData
-    document.querySelector('.info').innerHTML = `
-      <h3>Address</h3>
-      <p>${features[0]?.address || features[0].properties?.address}</p>
-      <h3>Text</h3>
-      <p>${features[0].text}</p>
-      ${features[0].context.map((field) => `
-        <h3>${field.id.split('.')[0]}</h3>
-        <p>${field.text}</p>
-      `).toString().replaceAll(',', '')}
-      <textarea>${features[0].place_name}</textarea>
-    `
+    setToUI(features[0])
   }
+
+  const findAddress = async (address) => {
+    const addressData = await (await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${address.toLowerCase()}.json?access_token=${ACCESS_TOKEN}`)).json()
+    const { features } = addressData
+    map.setCenter(features[0].center);
+    marker.setLngLat(features[0].center)
+    setToUI(features[0])
+  }
+
+  mapboxgl.accessToken = ACCESS_TOKEN
+
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v11',
+    center: INITIAL_LOCATION,
+    zoom: 13
+  })
 
   const marker = addMarker(INITIAL_LOCATION[0], INITIAL_LOCATION[1])
   setAddress(INITIAL_LOCATION[0], INITIAL_LOCATION[1])
@@ -57,5 +74,10 @@ export const render = (container) => {
     const { lngLat } = e
     marker.setLngLat(lngLat)
     setAddress(lngLat.lng, lngLat.lat)
+  })
+
+  document.querySelector('.search').addEventListener('click', async () => {
+    const address = document.querySelector('.info textarea').value
+    findAddress(address)
   })
 }
